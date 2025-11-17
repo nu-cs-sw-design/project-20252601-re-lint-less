@@ -1,7 +1,7 @@
 # Project: NAME
 
 ## Contributors
-NAME, NAME, NAME
+Jett Strack, Charlie Kalousek, Ellen Tomlins
 
 ## Dependencies
 - LANGUAGE AND VERSION
