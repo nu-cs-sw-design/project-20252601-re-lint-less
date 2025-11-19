@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 // FIXME: this code has TERRIBLE DESIGN all around
-public class LinterEngine {
+public class Linter {
 
 	String[] fieldForAnalysisByThisProgram = new String[1];
 
