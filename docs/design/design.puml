@@ -1,2 +1,52 @@
 @startuml
+
+package linter {
+  class Linter {
+    - checks : List<Check>
+    + run(classFile: byte[]) : void
+    + addCheck(check: Check) : void
+  }
+
+  interface Check {
+    + apply(classNode: ClassNode) : void
+  }
+
+  class ASMClassParser {
+    + parse(classFile: byte[]) : ClassNode
+  }
+
+  class ClassNode
+  class MethodNode
+  class FieldNode
+}
+
+Linter --> Check : uses >
+Linter --> ASMClassParser : parses >
+ASMClassParser --> ClassNode
+ClassNode --> MethodNode
+ClassNode --> FieldNode
+
+package checks {
+  class MagicNumberCheck implements Check
+  class LongMethodCheck implements Check
+  class EmptyCatchCheck implements Check
+  class ForbiddenAPICheck implements Check
+  class NamingConventionCheck implements Check
+  class DeepNestingCheck implements Check
+  class UnusedPrivateMethodCheck implements Check
+  class PublicFieldCheck implements Check
+  class DuplicateStringLiteralCheck implements Check
+}
+
+Check <|.. MagicNumberCheck
+Check <|.. LongMethodCheck
+Check <|.. EmptyCatchCheck
+Check <|.. ForbiddenAPICheck
+Check <|.. NamingConventionCheck
+Check <|.. DeepNestingCheck
+Check <|.. UnusedPrivateMethodCheck
+Check <|.. PublicFieldCheck
+Check <|.. DuplicateStringLiteralCheck
+
 @enduml
+
