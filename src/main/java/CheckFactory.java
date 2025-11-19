@@ -1,0 +1,11 @@
+import Checks.*;
+import java.util.List;
+
+public class CheckFactory {
+
+    public static List<Check> createChecks() {
+        return List.of(
+                new PrintClassNameCheck()
+        );
+    }
+}

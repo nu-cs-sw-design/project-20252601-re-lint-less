@@ -6,9 +6,6 @@ import org.objectweb.asm.tree.ClassNode;
 
 public class Parser {
 
-    /**
-     * Parses a class by name using the classpath
-     */
     public ClassNode parse(String className) throws IOException {
         ClassReader reader = new ClassReader(className);
         ClassNode classNode = new ClassNode();

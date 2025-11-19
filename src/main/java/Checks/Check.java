@@ -1,17 +1,12 @@
 package Checks;
 
 import org.objectweb.asm.tree.ClassNode;
+import Reporting.Reporter;
 
-/**
- * A single lint check that inspects an ASM ClassNode.
- * Concrete implementations live elsewhere.
- */
 public interface Check {
-
     /**
-     * Apply this check to the given class.
-     * Implementations are free to report issues however they want
-     * @param classNode ASM tree representation of the class
+     * @return true if the check ran successfully,
+     *         false if the check had an internal error.
      */
-    void apply(ClassNode classNode);
+    boolean apply(ClassNode classNode, Reporter reporter);
 }
