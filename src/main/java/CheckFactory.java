@@ -8,7 +8,8 @@ public class CheckFactory {
                 new PrintClassNameCheck(),
                 new TooManyNestedIfsCheck(),
                 new RedundantInterfacesCheck(),
-                new PublicFieldCheck()
+                new PublicFieldCheck(),
+                new MagicNumberCheck()
         );
     }
 }
