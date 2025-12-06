@@ -11,7 +11,7 @@ public class CheckFactory {
                 new PublicFieldCheck(),
                 new MagicNumberCheck(),
                 new TooManyParametersCheck(),
-                new UnreachableCodeBlockCheck(),
+                new UnreachableCodeCheck(),
                 new UnusedVariablesCheck()
         );
     }

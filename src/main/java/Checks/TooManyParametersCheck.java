@@ -1,51 +1,51 @@
 package Checks;
 
+import Reporting.Reporter;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.Type;
-import Reporting.Reporter;
 
 /**
- * Checks if methods have too many parameters.
- * Methods with excessive parameters are harder to understand and maintain.
- * Threshold: Maximum 5 parameters per method.
+ * Flags methods with too many parameters.
  */
 public class TooManyParametersCheck implements Check {
-    private static final int MAX_PARAMETERS = 5;
+
+    // Default maximum allowed parameters
+    private final int maxParams;
+
+    public TooManyParametersCheck() {
+        this.maxParams = 5; // default threshold
+    }
+
+    public TooManyParametersCheck(int maxParams) {
+        this.maxParams = maxParams;
+    }
 
     @Override
     public boolean apply(ClassNode classNode, Reporter reporter) {
         try {
             for (MethodNode method : classNode.methods) {
-                if (method.name.equals("<init>") || method.name.equals("<clinit>")) {
-                    continue;
-                }
+                // Skip constructors if you want (optional)
+                // if ("<init>".equals(method.name)) continue;
 
-                int paramCount = countParameters(method.desc);
+                Type[] argumentTypes = Type.getArgumentTypes(method.desc);
+                int paramCount = argumentTypes.length;
 
-                if (paramCount > MAX_PARAMETERS) {
+                if (paramCount > maxParams) {
                     reporter.report(
-                        classNode.name,
-                        "Method '" + method.name + "' has " + paramCount +
-                        " parameters (max " + MAX_PARAMETERS + " allowed)"
+                            classNode.name,
+                            "Method '" + method.name + "' has " + paramCount
+                                    + " parameters (max allowed: " + maxParams + ")"
                     );
                 }
             }
             return true;
         } catch (Exception e) {
-            reporter.report(classNode.name, "TooManyParametersCheck failed: " + e.getMessage());
+            reporter.report(
+                    classNode.name,
+                    "TooManyParametersCheck failed: " + e.getMessage()
+            );
             return false;
         }
-    }
-
-    /**
-     * Counts the number of parameters in a method descriptor.
-     * Method descriptors have the format: (param types)return type
-     * Example: (ILjava/lang/String;)V means 2 parameters (int, String)
-     */
-    private int countParameters(String descriptor) {
-        Type methodType = Type.getType(descriptor);
-        Type[] argumentTypes = methodType.getArgumentTypes();
-        return argumentTypes.length;
     }
 }
