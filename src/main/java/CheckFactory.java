@@ -9,7 +9,10 @@ public class CheckFactory {
                 new TooManyNestedIfsCheck(),
                 new RedundantInterfacesCheck(),
                 new PublicFieldCheck(),
-                new MagicNumberCheck()
+                new MagicNumberCheck(),
+                new TooManyParametersCheck(),
+                new UnreachableCodeBlockCheck(),
+                new UnusedVariablesCheck()
         );
     }
 }
