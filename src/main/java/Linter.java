@@ -18,6 +18,7 @@ public class Linter {
 
     private final Parser parser = new Parser();
     private final List<Check> checks = new ArrayList<>();
+    private static final Path CLASSES_ROOT = Paths.get("build", "classes", "java", "main");
 
     public Linter() {
         // default constructor, no args
@@ -101,12 +102,20 @@ public class Linter {
      * @return list of fully qualified class names
      */
     private static List<String> findClassFilesInDirectory(String dirPath) throws IOException {
-        Path rootPath = Paths.get(dirPath);
-        if (!Files.exists(rootPath) || !Files.isDirectory(rootPath)) {
+        Path dir = Paths.get(dirPath).toAbsolutePath();
+        Path rootPath = CLASSES_ROOT.toAbsolutePath();
+
+        if (!Files.exists(dir) || !Files.isDirectory(dir)) {
             return List.of();
         }
 
-        try (Stream<Path> paths = Files.walk(rootPath)) {
+        // Ensure the directory is actually under the classes root
+        if (!dir.startsWith(rootPath)) {
+            // You can choose to return empty or throw an error. For now, just return empty.
+            return List.of();
+        }
+
+        try (Stream<Path> paths = Files.walk(dir)) {
             return paths
                     .filter(Files::isRegularFile)
                     .filter(p -> p.toString().endsWith(".class"))
