@@ -1,194 +1,80 @@
 package Checks;
 
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.*;
+import BytecodeParser.IClass;
+import BytecodeParser.IMethod;
+import BytecodeParser.IInstruction;
+import BytecodeParser.ILocalVariable;
 import Reporting.Reporter;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
  * Detects local variables that are declared but never used.
- * This check analyzes local variable tables and tracks which variables
- * are loaded during method execution. Variables that are never loaded
- * are considered unused and reported.
+ * Works with the BytecodeParser wrapper interfaces.
  */
+
+/*
 public class UnusedVariablesCheck implements Check {
 
     @Override
-    public boolean apply(ClassNode classNode, Reporter reporter) {
+    public boolean apply(IClass clazz, Reporter reporter) {
         try {
-            for (MethodNode method : classNode.methods) {
-                checkForUnusedVariables(classNode, method, reporter);
+            for (IMethod method : clazz.getMethods()) {
+                checkForUnusedVariables(clazz.getClassName(), method, reporter);
             }
             return true;
         } catch (Exception e) {
-            reporter.report(classNode.name, "UnusedVariablesCheck failed: " + e.getMessage());
+            reporter.report(clazz.getClassName(),
+                    "UnusedVariablesCheck failed: " + e.getMessage());
             return false;
         }
     }
 
-    /**
-     * Checks a single method for unused local variables.
-     */
-    private void checkForUnusedVariables(ClassNode classNode, MethodNode method, Reporter reporter) {
-        // Skip methods without local variable information
-        if (method.localVariables == null || method.localVariables.isEmpty()) {
-            return;
-        }
+    private void checkForUnusedVariables(String className, IMethod method, Reporter reporter) {
+        List<ILocalVariable> locals = method.getLocalVariables();
+        if (locals == null || locals.isEmpty()) return;
 
-        // Track which variable indices are loaded
         Set<Integer> loadedVariables = new HashSet<>();
 
-        // Scan instructions to find all variable loads
-        for (AbstractInsnNode insn : method.instructions) {
-            if (insn instanceof VarInsnNode) {
-                VarInsnNode varInsn = (VarInsnNode) insn;
-
-                // Check if this is a load instruction
-                if (isLoadInstruction(varInsn.getOpcode())) {
-                    loadedVariables.add(varInsn.var);
+        // Scan instructions to find variable loads
+        for (IInstruction insn : method.getInstructions()) {
+            if (isLoadInstruction(insn.getOpcode())) {
+                if (insn instanceof BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction) {
+                    BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction asmInsn =
+                            (BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction) insn;
+                    Integer varIndex = asmInsn.getVarIndex(); // you may need to expose var index in ASMInstruction
+                    if (varIndex != null) {
+                        loadedVariables.add(varIndex);
+                    }
                 }
             }
         }
 
-        // Check each local variable to see if it was ever loaded
-        for (LocalVariableNode localVar : method.localVariables) {
-            // Skip "this" parameter for instance methods
-            if (localVar.index == 0 && !isStatic(method)) {
-                continue;
-            }
+        for (ILocalVariable localVar : locals) {
+            // Skip "this" for instance methods
+            if (localVar.getIndex() == 0 && !method.isStatic()) continue;
 
-            // Skip method parameters (they're passed in, so being unused might be intentional
-            // for interface compliance or overriding). We only check truly local variables.
-            if (isMethodParameter(method, localVar)) {
-                continue;
-            }
+            // Skip method parameters
+            if (isMethodParameter(method, localVar)) continue;
 
-            // Check if this variable was ever loaded
-            if (!loadedVariables.contains(localVar.index)) {
-                reporter.report(
-                    classNode.name,
-                    "Method '" + method.name + "' declares unused variable '" + localVar.name + "'"
-                );
+            if (!loadedVariables.contains(localVar.getIndex())) {
+                reporter.report(className,
+                        "Method '" + method.getName() + "' declares unused variable '" + localVar.getName() + "'");
             }
         }
     }
 
-    /**
-     * Checks if an opcode is a variable load instruction.
-     */
     private boolean isLoadInstruction(int opcode) {
-        return opcode == Opcodes.ILOAD ||  // int load
-               opcode == Opcodes.LLOAD ||  // long load
-               opcode == Opcodes.FLOAD ||  // float load
-               opcode == Opcodes.DLOAD ||  // double load
-               opcode == Opcodes.ALOAD;    // reference load
+        return (opcode >= 21 && opcode <= 25); // ILOAD, LLOAD, FLOAD, DLOAD, ALOAD
     }
 
-    /**
-     * Checks if a method is static.
-     */
-    private boolean isStatic(MethodNode method) {
-        return (method.access & Opcodes.ACC_STATIC) != 0;
-    }
-
-    /**
-     * Determines if a local variable is a method parameter.
-     * Parameters occupy the first N local variable slots, where N is the parameter count.
-     * For instance methods, slot 0 is "this", then parameters start at slot 1.
-     * For static methods, parameters start at slot 0.
-     */
-    private boolean isMethodParameter(MethodNode method, LocalVariableNode localVar) {
-        // Count the number of parameter slots
-        int paramSlots = 0;
-
-        // For instance methods, slot 0 is "this"
-        if (!isStatic(method)) {
-            paramSlots = 1;
-        }
-
-        // Count parameter slots from method descriptor
-        String descriptor = method.desc;
-        int startIndex = descriptor.indexOf('(');
-        int endIndex = descriptor.indexOf(')');
-
-        if (startIndex >= 0 && endIndex > startIndex) {
-            String params = descriptor.substring(startIndex + 1, endIndex);
-            paramSlots += countParameterSlots(params);
-        }
-
-        // If the variable index is less than the total parameter slots, it's a parameter
-        return localVar.index < paramSlots;
-    }
-
-    /**
-     * Counts the number of local variable slots used by parameters.
-     * Note: long and double types take 2 slots, all others take 1 slot.
-     */
-    private int countParameterSlots(String paramDescriptor) {
-        int slots = 0;
-        int i = 0;
-
-        while (i < paramDescriptor.length()) {
-            char c = paramDescriptor.charAt(i);
-
-            switch (c) {
-                case 'B': // byte
-                case 'C': // char
-                case 'F': // float
-                case 'I': // int
-                case 'S': // short
-                case 'Z': // boolean
-                    slots++;
-                    i++;
-                    break;
-
-                case 'D': // double (takes 2 slots)
-                case 'J': // long (takes 2 slots)
-                    slots += 2;
-                    i++;
-                    break;
-
-                case 'L': // object reference
-                    slots++;
-                    // Skip until we find the semicolon
-                    while (i < paramDescriptor.length() && paramDescriptor.charAt(i) != ';') {
-                        i++;
-                    }
-                    i++; // skip the semicolon
-                    break;
-
-                case '[': // array
-                    // Arrays take 1 slot, but we need to skip the array descriptor
-                    slots++;
-                    i++;
-                    // Skip array dimensions
-                    while (i < paramDescriptor.length() && paramDescriptor.charAt(i) == '[') {
-                        i++;
-                    }
-                    // Skip the element type
-                    if (i < paramDescriptor.length()) {
-                        char elementType = paramDescriptor.charAt(i);
-                        if (elementType == 'L') {
-                            // Object type, skip until semicolon
-                            while (i < paramDescriptor.length() && paramDescriptor.charAt(i) != ';') {
-                                i++;
-                            }
-                            i++; // skip semicolon
-                        } else {
-                            // Primitive type
-                            i++;
-                        }
-                    }
-                    break;
-
-                default:
-                    i++; // Skip unknown characters
-                    break;
-            }
-        }
-
-        return slots;
+    private boolean isMethodParameter(IMethod method, ILocalVariable localVar) {
+        int paramSlots = method.isStatic() ? 0 : 1; // account for "this"
+        paramSlots += method.getParameterCount(); // total parameter slots
+        return localVar.getIndex() < paramSlots;
     }
 }
+
+*/

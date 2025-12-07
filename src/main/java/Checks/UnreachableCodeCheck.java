@@ -1,91 +1,57 @@
 package Checks;
 
+import BytecodeParser.IClass;
+import BytecodeParser.IMethod;
 import Reporting.Reporter;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.*;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
-/**
- * Flags unreachable code blocks (instructions after RETURN or other terminal instructions).
- */
 public class UnreachableCodeCheck implements Check {
 
     @Override
-    public boolean apply(ClassNode classNode, Reporter reporter) {
+    public boolean apply(IClass classNode, Reporter reporter) {
         try {
-            for (MethodNode method : classNode.methods) {
-                InsnList instructions = method.instructions;
-                if (instructions == null || instructions.size() == 0) continue;
+            for (IMethod method : classNode.getMethods()) {
+                List<Integer> opcodes = method.getOpcodes();
+                if (opcodes == null || opcodes.isEmpty()) continue;
 
                 boolean unreachable = false;
-                Set<LabelNode> jumpTargets = new HashSet<>();
 
-                // Collect all jump targets (labels)
-                for (AbstractInsnNode insn : instructions) {
-                    if (insn instanceof JumpInsnNode) {
-                        JumpInsnNode jumpInsn = (JumpInsnNode) insn;
-                        jumpTargets.add(jumpInsn.label);
-                    } else if (insn instanceof TableSwitchInsnNode) {
-                        TableSwitchInsnNode tableSwitch = (TableSwitchInsnNode) insn;
-                        jumpTargets.add(tableSwitch.dflt);
-                        jumpTargets.addAll(tableSwitch.labels);
-                    } else if (insn instanceof LookupSwitchInsnNode) {
-                        LookupSwitchInsnNode lookupSwitch = (LookupSwitchInsnNode) insn;
-                        jumpTargets.add(lookupSwitch.dflt);
-                        jumpTargets.addAll(lookupSwitch.labels);
-                    }
-                }
-
-                for (AbstractInsnNode insn : instructions) {
-
-                    if (insn instanceof LabelNode) {
-                        LabelNode label = (LabelNode) insn;
-                        // If label is a jump target, code here is reachable
-                        if (jumpTargets.contains(label)) {
-                            unreachable = false;
-                        }
-                    }
+                for (int opcode : opcodes) {
 
                     if (unreachable) {
                         reporter.report(
-                                classNode.name,
-                                "Unreachable code detected in method '" + method.name + "'"
+                                classNode.getClassName(),
+                                "Unreachable code detected in method '" + method.getName() + "'"
                         );
-                        // Only report once per unreachable block
-                        unreachable = false;
+                        unreachable = false; // only report once per block
                     }
 
-                    // Check for terminal instructions
-                    if (isTerminal(insn)) {
+                    if (isTerminal(opcode)) {
                         unreachable = true;
                     }
                 }
             }
             return true;
-
         } catch (Exception e) {
             reporter.report(
-                    classNode.name,
+                    classNode.getClassName(),
                     "UnreachableCodeCheck failed: " + e.getMessage()
             );
             return false;
         }
     }
 
-    // Returns true if the instruction ends normal control flow
-    private boolean isTerminal(AbstractInsnNode insn) {
-        int opcode = insn.getOpcode();
-        if (opcode == -1) return false; // not a real instruction
+    private boolean isTerminal(int opcode) {
         switch (opcode) {
-            case Opcodes.RETURN:
-            case Opcodes.IRETURN:
-            case Opcodes.LRETURN:
-            case Opcodes.FRETURN:
-            case Opcodes.DRETURN:
-            case Opcodes.ARETURN:
-            case Opcodes.ATHROW:
+            case -1: return false;
+            case org.objectweb.asm.Opcodes.RETURN:
+            case org.objectweb.asm.Opcodes.IRETURN:
+            case org.objectweb.asm.Opcodes.LRETURN:
+            case org.objectweb.asm.Opcodes.FRETURN:
+            case org.objectweb.asm.Opcodes.DRETURN:
+            case org.objectweb.asm.Opcodes.ARETURN:
+            case org.objectweb.asm.Opcodes.ATHROW:
                 return true;
             default:
                 return false;

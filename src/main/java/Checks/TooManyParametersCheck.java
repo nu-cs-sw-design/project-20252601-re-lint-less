@@ -1,9 +1,10 @@
 package Checks;
 
+import BytecodeParser.IClass;
+import BytecodeParser.IMethod;
 import Reporting.Reporter;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
+
+import java.util.List;
 
 /**
  * Flags methods with too many parameters.
@@ -22,27 +23,31 @@ public class TooManyParametersCheck implements Check {
     }
 
     @Override
-    public boolean apply(ClassNode classNode, Reporter reporter) {
+    public boolean apply(IClass clazz, Reporter reporter) {
         try {
-            for (MethodNode method : classNode.methods) {
-                // Skip constructors if you want (optional)
-                // if ("<init>".equals(method.name)) continue;
+            List<IMethod> methods = clazz.getMethods();
 
-                Type[] argumentTypes = Type.getArgumentTypes(method.desc);
-                int paramCount = argumentTypes.length;
+            for (IMethod method : methods) {
+                // Skip constructors if desired
+                if (method.getName().equals("<init>") || method.getName().equals("<clinit>")) {
+                    continue;
+                }
+
+                int paramCount = method.getParameterCount();
 
                 if (paramCount > maxParams) {
                     reporter.report(
-                            classNode.name,
-                            "Method '" + method.name + "' has " + paramCount
+                            clazz.getClassName(),
+                            "Method '" + method.getName() + "' has " + paramCount
                                     + " parameters (max allowed: " + maxParams + ")"
                     );
                 }
             }
+
             return true;
         } catch (Exception e) {
             reporter.report(
-                    classNode.name,
+                    clazz.getClassName(),
                     "TooManyParametersCheck failed: " + e.getMessage()
             );
             return false;

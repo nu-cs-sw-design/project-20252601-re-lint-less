@@ -1,17 +1,17 @@
 package Checks;
 
-import org.objectweb.asm.tree.ClassNode;
+import BytecodeParser.IClass;
 import Reporting.Reporter;
 
 public class PrintClassNameCheck implements Check {
 
     @Override
-    public boolean apply(ClassNode classNode, Reporter reporter) {
+    public boolean apply(IClass clazz, Reporter reporter) {
         try {
-            reporter.report(classNode.name, "Visited class.");
+            reporter.report(clazz.getClassName(), "Visited class.");
             return true;
         } catch (Exception e) {
-            reporter.report(classNode.name,
+            reporter.report(clazz.getClassName(),
                     "PrintClassNameCheck failed: " + e.getMessage());
             return false;
         }

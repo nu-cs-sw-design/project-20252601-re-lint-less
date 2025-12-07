@@ -1,10 +1,14 @@
 package Checks;
 
+import BytecodeParser.IClass;
+import BytecodeParser.IMethod;
+import BytecodeParser.IInstruction;
+import BytecodeParser.ILabel;
 import Reporting.Reporter;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.*;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 
 /**
  * Flags methods whose conditional branching (if-statements) is nested
@@ -12,23 +16,23 @@ import java.util.*;
  */
 public class TooManyNestedIfsCheck implements Check {
 
-    // TODO Maybe change this to be configurable
     private static final int MAX_NESTING = 3;
 
     @Override
-    public boolean apply(ClassNode classNode, Reporter reporter) {
+    public boolean apply(IClass clazz, Reporter reporter) {
         try {
-            List<MethodNode> methods = (List<MethodNode>) classNode.methods;
-            for (MethodNode method : methods) {
+            for (IMethod method : clazz.getMethods()) {
 
-                if (method.name.equals("<init>") || method.name.equals("<clinit>")) {
+                // Skip constructors/static initializers
+                if (method.getName().equals("<init>") || method.getName().equals("<clinit>")) {
                     continue;
                 }
 
                 int maxDepth = computeMaxIfNesting(method);
                 if (maxDepth > MAX_NESTING) {
-                    reporter.report(classNode.name,
-                            "Method '" + method.name + "' has nested conditionals of depth "
+                    reporter.report(
+                            clazz.getClassName(),
+                            "Method '" + method.getName() + "' has nested conditionals of depth "
                                     + maxDepth + " (max allowed is " + MAX_NESTING + ")."
                     );
                 }
@@ -36,7 +40,7 @@ public class TooManyNestedIfsCheck implements Check {
             return true;
         } catch (Exception e) {
             reporter.report(
-                    classNode.name,
+                    clazz.getClassName(),
                     "TooManyNestedIfsCheck failed: " + e.getMessage()
             );
             return false;
@@ -46,46 +50,32 @@ public class TooManyNestedIfsCheck implements Check {
     /**
      * Estimate the maximum nesting of if-statements in a method.
      */
-    private int computeMaxIfNesting(MethodNode method) {
-        InsnList instruction = method.instructions;
-        if (instruction == null || instruction.size() == 0) {
+    private int computeMaxIfNesting(IMethod method) {
+        List<IInstruction> instructions = method.getInstructions();
+        if (instructions == null || instructions.isEmpty()) {
             return 0;
         }
 
-        // Map each LabelNode to its instruction index
-        Map<LabelNode, Integer> labelIndex = new IdentityHashMap<>();
-        for (int i = 0; i < instruction.size(); i++) {
-            AbstractInsnNode absInstruction = instruction.get(i);
-
-            if (absInstruction instanceof LabelNode) {
-                labelIndex.put((LabelNode) absInstruction, i);
-            }
-        }
-
+        // Map jump labels to their instruction index
+        // (We only handle simple forward jumps for if-statements)
         Deque<Integer> regionEndStack = new ArrayDeque<>();
         int maxDepth = 0;
 
-        for (int i = 0; i < instruction.size(); i++) {
+        for (int i = 0; i < instructions.size(); i++) {
+            IInstruction insn = instructions.get(i);
 
             // Pop any regions that have ended
             while (!regionEndStack.isEmpty() && regionEndStack.peek() <= i) {
                 regionEndStack.pop();
             }
 
-            AbstractInsnNode absInstruction = instruction.get(i);
-
-            if (absInstruction instanceof JumpInsnNode) {
-                int opcode = absInstruction.getOpcode();
-
-                if ((opcode >= Opcodes.IFEQ && opcode <= Opcodes.IF_ACMPNE)
-                        || opcode == Opcodes.IFNULL
-                        || opcode == Opcodes.IFNONNULL) {
-                    JumpInsnNode jump = (JumpInsnNode) absInstruction;
-                    Integer targetIdx = labelIndex.get(jump.label);
-
-                    // Only consider forward jumps
-                    if (targetIdx != null && targetIdx > i) {
-                        regionEndStack.push(targetIdx);
+            if (isConditionalJump(insn)) {
+                ILabel target = insn.getJumpLabel();
+                if (target != null) {
+                    // Find the target index
+                    int targetIndex = findLabelIndex(instructions, target);
+                    if (targetIndex > i) { // forward jump
+                        regionEndStack.push(targetIndex);
                         maxDepth = Math.max(maxDepth, regionEndStack.size());
                     }
                 }
@@ -93,4 +83,28 @@ public class TooManyNestedIfsCheck implements Check {
         }
 
         return maxDepth;
-    }}
+    }
+
+    private boolean isConditionalJump(IInstruction insn) {
+        int opcode = insn.getOpcode();
+        // Opcodes for simple if-statements
+        return (opcode >= 153 && opcode <= 166)  // IFEQ..IF_ACMPNE
+                || opcode == 198 // IFNULL
+                || opcode == 199; // IFNONNULL
+    }
+
+    private int findLabelIndex(List<IInstruction> instructions, ILabel label) {
+        for (int i = 0; i < instructions.size(); i++) {
+            IInstruction insn = instructions.get(i);
+            if (insn instanceof BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction) {
+                BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction asmInsn =
+                        (BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction) insn;
+                ILabel jumpLabel = asmInsn.getJumpLabel();
+                if (jumpLabel != null && jumpLabel.equals(label)) {
+                    return i;
+                }
+            }
+        }
+        return -1; // not found
+    }
+}
