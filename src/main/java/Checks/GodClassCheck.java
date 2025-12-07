@@ -1,7 +1,11 @@
 package Checks;
 
+import BytecodeParser.IClass;
+import BytecodeParser.IMethod;
+import BytecodeParser.IField;
 import Reporting.Reporter;
-import org.objectweb.asm.tree.ClassNode;
+
+import java.util.List;
 
 /**
  * Detects "God Classes" that violate the Single Responsibility Principle.
@@ -24,33 +28,32 @@ public class GodClassCheck implements Check {
     }
 
     @Override
-    public boolean apply(ClassNode classNode, Reporter reporter) {
+    public boolean apply(IClass classNode, Reporter reporter) {
         try {
-            int methodCount = classNode.methods.size();
-            int fieldCount = classNode.fields.size();
+            List<IMethod> methods = classNode.getMethods();
+            List<IField> fields = classNode.getFields();
 
-            boolean isGodClass = false;
+            int methodCount = methods.size();
+            int fieldCount = fields.size();
 
             if (methodCount > maxMethods) {
                 reporter.report(
-                        classNode.name,
+                        classNode.getClassName(),
                         "Class has " + methodCount + " methods (max allowed: " + maxMethods + ") - possible God Class"
                 );
-                isGodClass = true;
             }
 
             if (fieldCount > maxFields) {
                 reporter.report(
-                        classNode.name,
+                        classNode.getClassName(),
                         "Class has " + fieldCount + " fields (max allowed: " + maxFields + ") - possible God Class"
                 );
-                isGodClass = true;
             }
 
             return true;
         } catch (Exception e) {
             reporter.report(
-                    classNode.name,
+                    classNode.getClassName(),
                     "GodClassCheck failed: " + e.getMessage()
             );
             return false;

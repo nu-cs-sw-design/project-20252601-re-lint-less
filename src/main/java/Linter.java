@@ -1,4 +1,4 @@
-import ASMParser.Parser;
+import BytecodeParser.Parser;
 import Checks.Check;
 import org.objectweb.asm.tree.ClassNode;
 import Reporting.Reporter;
@@ -14,9 +14,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import BytecodeParser.*;
+import BytecodeParser.ASM.ASMParser;
+
 public class Linter {
 
-    private final Parser parser = new Parser();
+    IClassParser asmParser = new ASMParser();
+    Parser parser = new Parser(asmParser);
     private final List<Check> checks = new ArrayList<>();
     private static final Path CLASSES_ROOT = Paths.get("build", "classes", "java", "main");
 
@@ -33,7 +37,7 @@ public class Linter {
     }
 
     public void run(String className, Reporter reporter) {
-        ClassNode node;
+        IClass node;
 
         try {
             node = parser.parse(className);
