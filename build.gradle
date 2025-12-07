@@ -2,6 +2,19 @@ plugins {
     id 'java'
     id 'application'
 }
+java {
+    // Use a Java 11 toolchain for compilation & running
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    // Compile to Java 11 bytecode
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+    options.release = 11
+}
 
 repositories {
     mavenCentral()
@@ -40,5 +53,19 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    testLogging {
+        showStandardStreams = true
+        events "passed", "failed", "skipped"
+    }
+}
+
+run {
+    doFirst {
+        if (args == null || args.isEmpty()) {
+            throw new GradleException(
+                    "Missing argument!\nUsage: ./gradlew run --args=\"<class-name|directory>\""
+            )
+        }
+    }
 }
 

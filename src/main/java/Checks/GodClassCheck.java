@@ -5,7 +5,7 @@ import org.objectweb.asm.tree.ClassNode;
 
 /**
  * Detects "God Classes" that violate the Single Responsibility Principle.
- * A God Class is one that has too many methods or fields, indicating it's
+ * A God Class is one that has too many methods or fields, indicating its
  * trying to do too much and should be refactored into smaller classes.
  */
 public class GodClassCheck implements Check {
