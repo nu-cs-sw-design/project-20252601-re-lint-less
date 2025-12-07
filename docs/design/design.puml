@@ -1,52 +1,170 @@
 @startuml
 
-package linter {
-  class Linter {
-    - checks : List<Check>
-    + run(classFile: byte[]) : void
-    + addCheck(check: Check) : void
+
+class Linter {
+    -parser : Parser
+    -checks : List<Check>
+
+    +Linter(Parser parser, List<Check> initialChecks)
+    -void addChecks(List<Check> checks)
+    -void run(String className, Reporter reporter)
+    -void runMultiple(List<String> classNames, Reporter reporter)
+}
+
+class LinterApplication {
+    -{static} CLASSES_ROOT : Path
+    -classFinder : ClassFinder
+    -linter : Linter
+    -reporter : Reporter
+
+    -LinterApplication(ClassFinder classFinder, Linter linter, Reporter reporter)
+    -void run(String[] args)
+    +{static} void main(String[] args)
+}
+
+class CheckFactory {
+    +{static} List<Check> createChecks()
+}
+
+package ClassFinder {
+    interface ClassFinder {
+        +List<String> discoverClasses(String[] inputs)
+    }
+
+    class FileSystemClassFinder {
+        -classesRoot : Path
+
+        +FileSystemClassFinder(Path classesRoot)
+        +List<String> discoverClasses(String[] inputs)
+
+        -List<String> findClassFilesInDirectory(Path dir)
+        -List<String> findClassFilesByPattern(String pattern)
+        -String pathToClassName(Path classPath)
+    }
+}
+
+package ASMParser {
+  class Parser {
+    +ClassNode parse(String className)
+  }
+}
+
+package Reporting {
+  interface Reporter {
+    +void report(String className, String message)
   }
 
+  class ConsoleReporter {
+    +void report(String className, String message)
+  }
+}
+
+package Checks {
   interface Check {
-    + apply(classNode: ClassNode) : void
+    +boolean apply(ClassNode classNode, Reporter reporter)
   }
 
-  class ASMClassParser {
-    + parse(classFile: byte[]) : ClassNode
+  class MagicNumberCheck {
+    -ALLOWED : Set<Number>
+
+    +boolean apply(ClassNode classNode, Reporter reporter)
+
+    -boolean isAllowed(Number n)
+    -Number decodeSimpleConstant(int opcode)
+    -boolean isNumeric(Object obj)
   }
 
-  class ClassNode
-  class MethodNode
-  class FieldNode
-}
+  class NamingConventionCheck {
+    +boolean apply(ClassNode classNode, Reporter reporter)
 
-Linter --> Check : uses >
-Linter --> ASMClassParser : parses >
-ASMClassParser --> ClassNode
-ClassNode --> MethodNode
-ClassNode --> FieldNode
+    -void checkClassName(ClassNode classNode, Reporter reporter)
+    -void checkMethodNames(ClassNode classNode, Reporter reporter)
+    -void checkFieldNames(ClassNode classNode, Reporter reporter)
+    -boolean isPascalCase(String name)
+    -boolean isCamelCase(String name)
+    -boolean isUpperSnakeCase(String name)
+    -boolean isConstant(FieldNode field)
+  }
 
-package checks {
-  class MagicNumberCheck implements Check
-  class LongMethodCheck implements Check
-  class EmptyCatchCheck implements Check
-  class ForbiddenAPICheck implements Check
-  class NamingConventionCheck implements Check
-  class DeepNestingCheck implements Check
-  class UnusedPrivateMethodCheck implements Check
-  class PublicFieldCheck implements Check
-  class DuplicateStringLiteralCheck implements Check
+  class PublicFieldCheck {
+    +boolean apply(ClassNode classNode, Reporter reporter)
+  }
+
+  class RedundantInterfacesCheck  {
+    +boolean apply(ClassNode classNode, Reporter reporter)
+
+    -void collectAllInterfacesFromClass(String internalClassName, Set<String> out, Set<String> visited)
+    -void collectSuperInterfaces(String internalInterfaceName, Set<String> out, Set<String> visited)
+    -ClassNode readClass(String internalName)
+  }
+
+  class GodClassCheck  {
+    -maxMethods : int
+    -maxFields : int
+
+    +boolean apply(ClassNode classNode, Reporter reporter)
+  }
+
+   class TooManyNestedIfsCheck {
+      -maxDepth : int
+
+      +boolean apply(ClassNode classNode, Reporter reporter)
+
+      -int computeMaxIfNesting(MethodNode method)
+   }
+
+    class TooManyParametersCheck {
+      -maxParams : int
+
+      +boolean apply(ClassNode classNode, Reporter reporter)
+    }
+
+    class UnreachableCodeCheck {
+      +boolean apply(ClassNode classNode, Reporter reporter)
+
+      -boolean isTerminal(AbstractInsnNode insn)
+    }
+
+    class UnusedVariablesCheck implements Check {
+      +boolean apply(ClassNode classNode, Reporter reporter)
+
+      -boolean checkForUnusedVariables(ClassNode classNode, MethodNode method, Reporter reporter)
+      -boolean isLoadInstruction(int opcode)
+      -boolean isStatic(MethodNode method)
+      -boolean isMethodParameter(MethodNode method, LocalVariableNode localVar)
+      -int countParameterSlots(String paramDescriptor)
+    }
+
 }
+LinterApplication ..> ClassFinder
+LinterApplication ..> Linter
+LinterApplication ..> Reporter
+LinterApplication ..> Parser
+LinterApplication ..> CheckFactory
+LinterApplication ..> FileSystemClassFinder
+LinterApplication ..> ConsoleReporter
+
+ClassFinder <|.. FileSystemClassFinder
+Reporter <|.. ConsoleReporter
 
 Check <|.. MagicNumberCheck
-Check <|.. LongMethodCheck
-Check <|.. EmptyCatchCheck
-Check <|.. ForbiddenAPICheck
 Check <|.. NamingConventionCheck
-Check <|.. DeepNestingCheck
-Check <|.. UnusedPrivateMethodCheck
 Check <|.. PublicFieldCheck
-Check <|.. DuplicateStringLiteralCheck
+Check <|.. RedundantInterfacesCheck
+Check <|.. GodClassCheck
+Check <|.. TooManyNestedIfsCheck
+Check <|.. TooManyParametersCheck
+Check <|.. UnreachableCodeCheck
+Check <|.. UnusedVariablesCheck
+
+TooManyNestedIfsCheck ..> Reporter
+TooManyParametersCheck ..> Reporter
+UnreachableCodeCheck ..> Reporter
+UnusedVariablesCheck ..> Reporter
+MagicNumberCheck ..> Reporter
+NamingConventionCheck ..> Reporter
+PublicFieldCheck ..> Reporter
+RedundantInterfacesCheck ..> Reporter
+GodClassCheck ..> Reporter
 
 @enduml
-

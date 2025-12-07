@@ -12,7 +12,6 @@ import java.util.*;
  */
 public class TooManyNestedIfsCheck implements Check {
 
-    // TODO Maybe change this to be configurable
     private static final int MAX_NESTING = 3;
 
     @Override

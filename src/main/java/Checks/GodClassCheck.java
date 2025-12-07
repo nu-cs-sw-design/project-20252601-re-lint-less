@@ -10,21 +10,12 @@ import org.objectweb.asm.tree.ClassNode;
  */
 public class GodClassCheck implements Check {
 
-    private final int maxMethods;
-    private final int maxFields;
-
-    public GodClassCheck() {
-        this.maxMethods = 20; // default threshold
-        this.maxFields = 10;  // default threshold
-    }
-
-    public GodClassCheck(int maxMethods, int maxFields) {
-        this.maxMethods = maxMethods;
-        this.maxFields = maxFields;
-    }
+    private final int maxMethods = 20;
+    private final int maxFields = 10;
 
     @Override
     public boolean apply(ClassNode classNode, Reporter reporter) {
+
         try {
             int methodCount = classNode.methods.size();
             int fieldCount = classNode.fields.size();

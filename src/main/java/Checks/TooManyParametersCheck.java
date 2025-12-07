@@ -11,15 +11,7 @@ import org.objectweb.asm.tree.MethodNode;
 public class TooManyParametersCheck implements Check {
 
     // Default maximum allowed parameters
-    private final int maxParams;
-
-    public TooManyParametersCheck() {
-        this.maxParams = 5; // default threshold
-    }
-
-    public TooManyParametersCheck(int maxParams) {
-        this.maxParams = maxParams;
-    }
+    private final int maxParams = 5;
 
     @Override
     public boolean apply(ClassNode classNode, Reporter reporter) {
