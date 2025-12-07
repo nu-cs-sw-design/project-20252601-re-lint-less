@@ -1,4 +1,4 @@
-# Project: NAME
+# Project: Re-Lint-less Java Linter
 
 ## Contributors
 Jett Strack, Charlie Kalousek, Ellen Tomlins
