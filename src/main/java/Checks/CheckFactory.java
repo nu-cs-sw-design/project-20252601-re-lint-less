@@ -1,10 +1,10 @@
+package Checks;
+
 import BytecodeParser.IClassParser;
-import Checks.*;
 import java.util.List;
 
 import BytecodeParser.Parser;
 import BytecodeParser.ASM.ASMParser;
-import Checks.RedundantInterfacesCheck;
 
 public class CheckFactory {
 

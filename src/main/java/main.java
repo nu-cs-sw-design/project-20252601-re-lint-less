@@ -1,4 +1,6 @@
-import ASMParser.Parser;
+import BytecodeParser.ASM.ASMParser;
+import BytecodeParser.IClassParser;
+import BytecodeParser.Parser;
 import Checks.Check;
 import Checks.CheckFactory;
 import ClassFinder.ClassFinder;
@@ -26,7 +28,8 @@ public final class main {
         }
 
         // 2. Wire up dependencies (composition root)
-        Parser parser = new Parser();
+        IClassParser asmParser = new ASMParser();
+        Parser parser = new Parser(asmParser);
         List<Check> checks = CheckFactory.createChecks();
         Linter linter = new Linter(parser, checks);
         ClassFinder classFinder = new FileSystemClassFinder(CLASSES_ROOT);

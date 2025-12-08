@@ -1,6 +1,8 @@
 import BytecodeParser.Parser;
 import Checks.Check;
 import Reporting.Reporter;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,8 +11,7 @@ import BytecodeParser.ASM.ASMParser;
 
 public class Linter {
 
-    IClassParser asmParser = new ASMParser();
-    Parser parser = new Parser(asmParser);
+    private final Parser parser;
     private final List<Check> checks = new ArrayList<>();
 
     public Linter(Parser parser, List<Check> initialChecks) {
