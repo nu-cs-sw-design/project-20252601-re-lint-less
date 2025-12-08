@@ -27,7 +27,6 @@ public final class FileSystemClassFinder implements ClassFinder {
             } else if (arg.contains("*")) {
                 classNames.addAll(findClassFilesByPattern(arg));
             } else {
-                // Assume it's a fully qualified class name
                 classNames.add(arg);
             }
         }
@@ -36,7 +35,7 @@ public final class FileSystemClassFinder implements ClassFinder {
     }
 
     /**
-     * Find all .class files in a directory recursively and convert to FQN.
+     * Find all .class files in a directory recursively
      */
     private List<String> findClassFilesInDirectory(Path dir) throws IOException {
         Path absoluteDir = dir.toAbsolutePath();
@@ -45,7 +44,6 @@ public final class FileSystemClassFinder implements ClassFinder {
             return List.of();
         }
 
-        // Ensure the directory is actually under the classes root
         if (!absoluteDir.startsWith(classesRoot)) {
             return List.of();
         }
@@ -63,8 +61,6 @@ public final class FileSystemClassFinder implements ClassFinder {
 
     /**
      * Find class files matching a wildcard pattern.
-     * Pattern format: "com.example.*" matches all classes in com.example package.
-     * For now, keep behavior similar to your original implementation.
      */
     private List<String> findClassFilesByPattern(String pattern) {
         // For now, just return the pattern as-is, without "*".
@@ -79,12 +75,10 @@ public final class FileSystemClassFinder implements ClassFinder {
             Path relativePath = classesRoot.relativize(classPath);
             String pathStr = relativePath.toString();
 
-            // Remove .class extension
             if (pathStr.endsWith(".class")) {
                 pathStr = pathStr.substring(0, pathStr.length() - 6);
             }
 
-            // Convert file separators to dots
             return pathStr.replace(File.separator, ".");
         } catch (Exception e) {
             return null;

@@ -2,7 +2,6 @@ package Checks;
 
 import BytecodeParser.IClass;
 import BytecodeParser.IClassParser;
-import BytecodeParser.Parser;
 import Reporting.Reporter;
 
 import java.util.HashSet;
@@ -11,10 +10,10 @@ import java.util.Set;
 
 public class RedundantInterfacesCheck implements Check {
 
-    private final Parser parser;
+    private final IClassParser classParser;
 
-    public RedundantInterfacesCheck(Parser parser) {
-        this.parser = parser;
+    public RedundantInterfacesCheck(IClassParser classParser) {
+        this.classParser = classParser;
     }
 
     @Override
@@ -58,7 +57,7 @@ public class RedundantInterfacesCheck implements Check {
                                                Set<String> visited) throws Exception {
         if (className == null || !visited.add(className)) return;
 
-        IClass cls = parser.parse(className);   // use the parser instance
+        IClass cls = classParser.parse(className);   // use the interface
         List<String> interfaces = cls.getDirectInterfaces();
         if (interfaces != null) {
             for (String iface : interfaces) {
@@ -78,7 +77,7 @@ public class RedundantInterfacesCheck implements Check {
                                         Set<String> visited) throws Exception {
         if (ifaceName == null || !visited.add(ifaceName)) return;
 
-        IClass iface = parser.parse(ifaceName);   // use the parser instance
+        IClass iface = classParser.parse(ifaceName);   // use the interface
         List<String> superIfaces = iface.getDirectInterfaces();
         if (superIfaces != null) {
             for (String superIface : superIfaces) {

@@ -55,7 +55,6 @@ public class MagicNumberCheck implements Check {
 
     /**
      * Tries to decode the instruction to a numeric constant if applicable.
-     * Supports integer, long, float, double pushes.
      */
     private Number decodeConstant(IInstruction insn) {
         if (insn.isPushConstant()) {

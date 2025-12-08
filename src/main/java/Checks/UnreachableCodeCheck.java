@@ -24,7 +24,7 @@ public class UnreachableCodeCheck implements Check {
                                 classNode.getClassName(),
                                 "Unreachable code detected in method '" + method.getName() + "'"
                         );
-                        unreachable = false; // only report once per block
+                        unreachable = false;
                     }
 
                     if (isTerminal(opcode)) {

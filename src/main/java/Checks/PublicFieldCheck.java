@@ -21,8 +21,6 @@ public class PublicFieldCheck implements Check {
             }
 
             for (IField field : fields) {
-                // IField may need a method to get access flags if available in your wrapper
-                // Assuming getAccess() exists, otherwise you could extend IField with it
                 if (field instanceof AccessAwareField) {
                     int access = ((AccessAwareField) field).getAccess();
                     boolean isPublic = (access & Opcodes.ACC_PUBLIC) != 0;
@@ -46,7 +44,7 @@ public class PublicFieldCheck implements Check {
     }
 
     /**
-     * Interface to allow access flag retrieval from fields if your wrapper doesn't already provide it.
+     * Interface to allow access flag retrieval from fields.
      */
     public interface AccessAwareField extends IField {
         int getAccess();

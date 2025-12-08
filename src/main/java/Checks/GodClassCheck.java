@@ -8,7 +8,7 @@ import Reporting.Reporter;
 import java.util.List;
 
 /**
- * Detects "God Classes" that violate the Single Responsibility Principle.
+ * Detects "God Classes".
  * A God Class is one that has too many methods or fields, indicating its
  * trying to do too much and should be refactored into smaller classes.
  */

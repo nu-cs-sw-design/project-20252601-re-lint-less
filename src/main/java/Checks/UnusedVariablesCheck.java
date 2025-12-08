@@ -32,7 +32,6 @@ public class UnusedVariablesCheck implements Check {
 
         Set<Integer> loadedVariables = new HashSet<>();
 
-        // Track all local variable indices that are ever loaded
         for (IInstruction insn : method.getInstructions()) {
             if (isLoadInstruction(insn.getOpcode())) {
                 Integer varIndex = insn.getVarIndex();
@@ -43,17 +42,14 @@ public class UnusedVariablesCheck implements Check {
         }
 
         for (ILocalVariable localVar : locals) {
-            // Skip "this" for instance methods
             if (localVar.getIndex() == 0 && !method.isStatic()) {
                 continue;
             }
 
-            // Skip method parameters
             if (isMethodParameter(method, localVar)) {
                 continue;
             }
 
-            // If never loaded, it's unused
             if (!loadedVariables.contains(localVar.getIndex())) {
                 reporter.report(
                         className,
@@ -70,7 +66,7 @@ public class UnusedVariablesCheck implements Check {
     }
 
     private boolean isMethodParameter(IMethod method, ILocalVariable localVar) {
-        int paramSlots = method.isStatic() ? 0 : 1; // account for "this"
+        int paramSlots = method.isStatic() ? 0 : 1;
 
         String descriptor = method.getDescriptor();
         int startIndex = descriptor.indexOf('(');

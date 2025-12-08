@@ -7,7 +7,7 @@ import Reporting.Reporter;
 import java.util.List;
 
 /**
- * Flags methods with too many parameters.
+ * Flags methods with too many parameters (5).
  */
 public class TooManyParametersCheck implements Check {
 
@@ -20,7 +20,6 @@ public class TooManyParametersCheck implements Check {
             List<IMethod> methods = clazz.getMethods();
 
             for (IMethod method : methods) {
-                // Skip constructors if desired
                 if (method.getName().equals("<init>") || method.getName().equals("<clinit>")) {
                     continue;
                 }

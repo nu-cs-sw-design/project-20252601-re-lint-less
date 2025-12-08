@@ -27,7 +27,6 @@ public class NamingConventionCheck implements Check {
         String fullName = classNode.getClassName();
         String simpleName = fullName.substring(fullName.lastIndexOf('/') + 1);
 
-        // Skip anonymous classes (contain $)
         if (simpleName.contains("$")) {
             return;
         }

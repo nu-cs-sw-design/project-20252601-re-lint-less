@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Flags methods whose conditional branching (if-statements) is nested
- * deeper than a configured threshold.
+ * deeper than 3.
  */
 public class TooManyNestedIfsCheck implements Check {
 
@@ -56,15 +56,12 @@ public class TooManyNestedIfsCheck implements Check {
             return 0;
         }
 
-        // Map jump labels to their instruction index
-        // (We only handle simple forward jumps for if-statements)
         Deque<Integer> regionEndStack = new ArrayDeque<>();
         int maxDepth = 0;
 
         for (int i = 0; i < instructions.size(); i++) {
             IInstruction insn = instructions.get(i);
 
-            // Pop any regions that have ended
             while (!regionEndStack.isEmpty() && regionEndStack.peek() <= i) {
                 regionEndStack.pop();
             }
@@ -72,7 +69,6 @@ public class TooManyNestedIfsCheck implements Check {
             if (isConditionalJump(insn)) {
                 ILabel target = insn.getJumpLabel();
                 if (target != null) {
-                    // Find the target index
                     int targetIndex = findLabelIndex(instructions, target);
                     if (targetIndex > i) { // forward jump
                         regionEndStack.push(targetIndex);
@@ -87,7 +83,6 @@ public class TooManyNestedIfsCheck implements Check {
 
     private boolean isConditionalJump(IInstruction insn) {
         int opcode = insn.getOpcode();
-        // Opcodes for simple if-statements
         return (opcode >= 153 && opcode <= 166)  // IFEQ..IF_ACMPNE
                 || opcode == 198 // IFNULL
                 || opcode == 199; // IFNONNULL

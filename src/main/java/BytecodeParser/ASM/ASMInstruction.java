@@ -19,18 +19,10 @@ final class ASMInstruction implements IInstruction {
     }
 
     @Override
-    public boolean isJump() {
-        return insn instanceof JumpInsnNode
-                || insn instanceof TableSwitchInsnNode
-                || insn instanceof LookupSwitchInsnNode;
-    }
-
-    @Override
     public ILabel getJumpLabel() {
         if (insn instanceof JumpInsnNode) {
-            return new ASMLabel(((JumpInsnNode) insn).label);
+            return new ASMLabel();
         }
-        // Could extend for TableSwitch/LookupSwitch later if needed
         return null;
     }
 

@@ -54,36 +54,11 @@ final class ASMMethod implements IMethod {
     }
 
     @Override
-    public List<String> getInstructionTypes() { // if your IMethod declares this
-        List<String> types = new ArrayList<>();
-        for (AbstractInsnNode insn : node.instructions.toArray()) {
-            types.add(insn.getClass().getSimpleName());
-        }
-        return types;
-    }
-
-    @Override
     public List<ILocalVariable> getLocalVariables() {
-        if (node.localVariables == null) {
-            return List.of();
-        }
+        if (node.localVariables == null) return List.of();
+
         return node.localVariables.stream()
-                .map(lv -> new ILocalVariable() {
-                    @Override
-                    public String getName() {
-                        return lv.name;
-                    }
-
-                    @Override
-                    public int getIndex() {
-                        return lv.index;
-                    }
-
-                    @Override
-                    public String getType() {
-                        return lv.desc;
-                    }
-                })
+                .map(ASMLocalVariable::new)
                 .collect(Collectors.toList());
     }
 

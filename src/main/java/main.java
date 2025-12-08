@@ -27,7 +27,7 @@ public final class main {
             System.exit(1);
         }
 
-        // 2. Wire up dependencies (composition root)
+        // 2. Wire up dependencies
         IClassParser asmParser = new ASMParser();
         Parser parser = new Parser(asmParser);
         List<Check> checks = CheckFactory.createChecks();
