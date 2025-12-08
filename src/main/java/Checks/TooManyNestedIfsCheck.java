@@ -93,18 +93,15 @@ public class TooManyNestedIfsCheck implements Check {
                 || opcode == 199; // IFNONNULL
     }
 
-    private int findLabelIndex(List<IInstruction> instructions, ILabel label) {
+    private int findLabelIndex(List<IInstruction> instructions, ILabel targetLabel) {
         for (int i = 0; i < instructions.size(); i++) {
             IInstruction insn = instructions.get(i);
-            if (insn instanceof BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction) {
-                BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction asmInsn =
-                        (BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction) insn;
-                ILabel jumpLabel = asmInsn.getJumpLabel();
-                if (jumpLabel != null && jumpLabel.equals(label)) {
-                    return i;
-                }
+            ILabel jumpLabel = insn.getJumpLabel();
+            if (jumpLabel != null && jumpLabel.equals(targetLabel)) {
+                return i;
             }
         }
-        return -1; // not found
+        return -1;
     }
+
 }
