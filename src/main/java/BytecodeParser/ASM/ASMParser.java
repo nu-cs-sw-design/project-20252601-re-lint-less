@@ -120,6 +120,15 @@ public class ASMParser implements IClassParser {
                         .collect(Collectors.toList()); // <- changed
             }
 
+            @Override
+            public String getDescriptor() {
+                return node.desc;
+            }
+
+            public boolean isStatic() {
+                return (node.access & org.objectweb.asm.Opcodes.ACC_STATIC) != 0;
+            }
+
         }
 
         private static class ASMField implements IField {
@@ -229,6 +238,14 @@ public class ASMParser implements IClassParser {
 
                     default: return null;
                 }
+            }
+
+            @Override
+            public Integer getVarIndex() {
+                if (insn instanceof VarInsnNode) {
+                    return ((VarInsnNode) insn).var;
+                }
+                return null;
             }
         }
 

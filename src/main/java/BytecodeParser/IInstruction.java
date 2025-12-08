@@ -6,5 +6,5 @@ public interface IInstruction {
     ILabel getJumpLabel(); // returns the target label if it’s a jump, null otherwise
 	boolean isPushConstant();
 	Number getConstantValue();
-
+    Integer getVarIndex();
 }

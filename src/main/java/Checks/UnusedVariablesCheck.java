@@ -10,12 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Detects local variables that are declared but never used.
- * Works with the BytecodeParser wrapper interfaces.
- */
-
-/*
 public class UnusedVariablesCheck implements Check {
 
     @Override
@@ -38,43 +32,110 @@ public class UnusedVariablesCheck implements Check {
 
         Set<Integer> loadedVariables = new HashSet<>();
 
-        // Scan instructions to find variable loads
+        // Track all local variable indices that are ever loaded
         for (IInstruction insn : method.getInstructions()) {
             if (isLoadInstruction(insn.getOpcode())) {
-                if (insn instanceof BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction) {
-                    BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction asmInsn =
-                            (BytecodeParser.ASM.ASMParser.ASMClass.ASMInstruction) insn;
-                    Integer varIndex = asmInsn.getVarIndex(); // you may need to expose var index in ASMInstruction
-                    if (varIndex != null) {
-                        loadedVariables.add(varIndex);
-                    }
+                Integer varIndex = insn.getVarIndex();
+                if (varIndex != null) {
+                    loadedVariables.add(varIndex);
                 }
             }
         }
 
         for (ILocalVariable localVar : locals) {
             // Skip "this" for instance methods
-            if (localVar.getIndex() == 0 && !method.isStatic()) continue;
+            if (localVar.getIndex() == 0 && !method.isStatic()) {
+                continue;
+            }
 
             // Skip method parameters
-            if (isMethodParameter(method, localVar)) continue;
+            if (isMethodParameter(method, localVar)) {
+                continue;
+            }
 
+            // If never loaded, it's unused
             if (!loadedVariables.contains(localVar.getIndex())) {
-                reporter.report(className,
-                        "Method '" + method.getName() + "' declares unused variable '" + localVar.getName() + "'");
+                reporter.report(
+                        className,
+                        "Method '" + method.getName() +
+                                "' declares unused variable '" + localVar.getName() + "'"
+                );
             }
         }
     }
 
     private boolean isLoadInstruction(int opcode) {
-        return (opcode >= 21 && opcode <= 25); // ILOAD, LLOAD, FLOAD, DLOAD, ALOAD
+        // ILOAD, LLOAD, FLOAD, DLOAD, ALOAD
+        return opcode >= 21 && opcode <= 25;
     }
 
     private boolean isMethodParameter(IMethod method, ILocalVariable localVar) {
         int paramSlots = method.isStatic() ? 0 : 1; // account for "this"
-        paramSlots += method.getParameterCount(); // total parameter slots
+
+        String descriptor = method.getDescriptor();
+        int startIndex = descriptor.indexOf('(');
+        int endIndex = descriptor.indexOf(')');
+
+        if (startIndex >= 0 && endIndex > startIndex) {
+            String params = descriptor.substring(startIndex + 1, endIndex);
+            paramSlots += countParameterSlots(params);
+        }
+
         return localVar.getIndex() < paramSlots;
     }
-}
 
-*/
+    private int countParameterSlots(String paramDescriptor) {
+        int slots = 0;
+        int i = 0;
+
+        while (i < paramDescriptor.length()) {
+            char c = paramDescriptor.charAt(i);
+
+            switch (c) {
+                case 'B': case 'C': case 'F':
+                case 'I': case 'S': case 'Z':
+                    slots++;
+                    i++;
+                    break;
+
+                case 'D': // double
+                case 'J': // long
+                    slots += 2;
+                    i++;
+                    break;
+
+                case 'L': // Object type
+                    slots++;
+                    while (i < paramDescriptor.length() && paramDescriptor.charAt(i) != ';') {
+                        i++;
+                    }
+                    i++; // skip ';'
+                    break;
+
+                case '[': // Array type
+                    slots++;
+                    i++;
+                    while (i < paramDescriptor.length() && paramDescriptor.charAt(i) == '[') {
+                        i++;
+                    }
+                    if (i < paramDescriptor.length()) {
+                        if (paramDescriptor.charAt(i) == 'L') {
+                            while (i < paramDescriptor.length() && paramDescriptor.charAt(i) != ';') {
+                                i++;
+                            }
+                            i++; // skip ';'
+                        } else {
+                            i++; // primitive element
+                        }
+                    }
+                    break;
+
+                default:
+                    i++; // skip unknown / unexpected
+                    break;
+            }
+        }
+
+        return slots;
+    }
+}
