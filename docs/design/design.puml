@@ -1,170 +1,305 @@
 @startuml
 
+package BytecodeParser {
 
-class Linter {
-    -parser : Parser
-    -checks : List<Check>
+  interface IClassParser {
+    + parse(className: String): IClass
+  }
 
-    +Linter(Parser parser, List<Check> initialChecks)
-    -void addChecks(List<Check> checks)
-    -void run(String className, Reporter reporter)
-    -void runMultiple(List<String> classNames, Reporter reporter)
+  interface IClass {
+    + getClassName(): String
+    + getMethods(): List<IMethod>
+    + getFields(): List<IField>
+    + getDirectInterfaces(): List<String>
+    + getSuperClassName(): String
+  }
+
+  interface IMethod {
+    + getName(): String
+    + getParameterCount(): int
+    + getOpcodes(): List<Integer>
+    + getInstructions(): List<IInstruction>
+    + getLocalVariables(): List<ILocalVariable>
+    + getDescriptor(): String
+    + isStatic(): boolean
+  }
+
+  interface IField {
+    + getName(): String
+    + isStatic(): boolean
+    + isFinal(): boolean
+  }
+
+  interface IInstruction {
+    + getOpcode(): int
+    + getJumpLabel(): ILabel
+    + isPushConstant(): boolean
+    + getConstantValue(): Number
+    + getVarIndex(): Integer
+  }
+
+  interface ILabel {
+  }
+
+  interface ILocalVariable {
+    + getName(): String
+    + getIndex(): int
+  }
+
+  class Parser {
+    - parser: IClassParser
+    + Parser(parser: IClassParser)
+    + parse(className: String): IClass
+  }
 }
 
-class LinterApplication {
-    -{static} CLASSES_ROOT : Path
-    -classFinder : ClassFinder
-    -linter : Linter
-    -reporter : Reporter
+package "BytecodeParser.ASM" {
 
-    -LinterApplication(ClassFinder classFinder, Linter linter, Reporter reporter)
-    -void run(String[] args)
-    +{static} void main(String[] args)
-}
+  class ASMParser {
+    + parse(className: String): IClass
+  }
 
-class CheckFactory {
-    +{static} List<Check> createChecks()
+  class ASMClass {
+    - node: ClassNode
+    + ASMClass(node: ClassNode)
+    + getClassName(): String
+    + getMethods(): List<IMethod>
+    + getFields(): List<IField>
+    + getDirectInterfaces(): List<String>
+    + getSuperClassName(): String
+  }
+
+  class ASMMethod {
+    - node: MethodNode
+    + ASMMethod(node: MethodNode)
+    + getName(): String
+    + getParameterCount(): int
+    + getOpcodes(): List<Integer>
+    + getInstructions(): List<IInstruction>
+    + getLocalVariables(): List<ILocalVariable>
+    + getDescriptor(): String
+    + isStatic(): boolean
+  }
+
+  class ASMField  {
+    - node: FieldNode
+    + ASMField(node: FieldNode)
+    + getName(): String
+    + getType(): String
+    + isStatic(): boolean
+    + isFinal(): boolean
+  }
+
+  class ASMInstruction {
+    - insn: AbstractInsnNode
+    + ASMInstruction(insn: AbstractInsnNode)
+    + getOpcode(): int
+    + getJumpLabel(): ILabel
+    + isPushConstant(): boolean
+    + getConstantValue(): Number
+    + getVarIndex(): Integer
+  }
+
+  class ASMLabel {
+    + equals(Object o): Boolean
+    + hashCode(): int
+  }
+
+  class ASMLocalVariable  {
+    - node: LocalVariableNode
+    + ASMLocalVariable(node: LocalVariableNode)
+    + getName(): String
+    + getIndex(): int
+  }
+
 }
 
 package ClassFinder {
-    interface ClassFinder {
-        +List<String> discoverClasses(String[] inputs)
-    }
 
-    class FileSystemClassFinder {
-        -classesRoot : Path
+  interface ClassFinder {
+    + discoverClasses(inputs: String[]): List<String>
+  }
 
-        +FileSystemClassFinder(Path classesRoot)
-        +List<String> discoverClasses(String[] inputs)
-
-        -List<String> findClassFilesInDirectory(Path dir)
-        -List<String> findClassFilesByPattern(String pattern)
-        -String pathToClassName(Path classPath)
-    }
-}
-
-package ASMParser {
-  class Parser {
-    +ClassNode parse(String className)
+  class FileSystemClassFinder  {
+    - classesRoot: Path
+    + FileSystemClassFinder(classesRoot: Path)
+    + discoverClasses(inputs: String[]): List<String>
+    - findClassFilesInDirectory(dir: Path): List<String>
+    - findClassFilesByPattern(pattern: String): List<String>
+    - pathToClassName(classPath: Path): String
   }
 }
 
 package Reporting {
+
   interface Reporter {
-    +void report(String className, String message)
+    + report(className: String, message: String): void
   }
 
   class ConsoleReporter {
-    +void report(String className, String message)
+    + ConsoleReporter()
+    + report(className: String, message: String): void
   }
 }
 
 package Checks {
+
   interface Check {
-    +boolean apply(ClassNode classNode, Reporter reporter)
+    + apply(clazz: IClass, reporter: Reporter): boolean
   }
 
   class MagicNumberCheck {
-    -ALLOWED : Set<Number>
+    - ALLOWED: Set<Number>
 
-    +boolean apply(ClassNode classNode, Reporter reporter)
+    + apply(clazz: IClass, reporter: Reporter): boolean
 
-    -boolean isAllowed(Number n)
-    -Number decodeSimpleConstant(int opcode)
-    -boolean isNumeric(Object obj)
+    - isAllowed(Number n): boolean
+    - decodeConstant(IInstruction insn): Number
   }
 
   class NamingConventionCheck {
-    +boolean apply(ClassNode classNode, Reporter reporter)
+    + apply(clazz: IClass, reporter: Reporter): boolean
 
-    -void checkClassName(ClassNode classNode, Reporter reporter)
-    -void checkMethodNames(ClassNode classNode, Reporter reporter)
-    -void checkFieldNames(ClassNode classNode, Reporter reporter)
-    -boolean isPascalCase(String name)
-    -boolean isCamelCase(String name)
-    -boolean isUpperSnakeCase(String name)
-    -boolean isConstant(FieldNode field)
+    - checkClassName(IClass classNode, Reporter reporter): void
+    - checkMethodNames(IClass classNode, Reporter reporter): void
+    - checkFieldNames(IClass classNode, Reporter reporter): void
+    - isPascalCase(String name): boolean
+    - isCamelCase(String name): boolean
+    - isUpperSnakeCase(String name): boolean
   }
 
   class PublicFieldCheck {
-    +boolean apply(ClassNode classNode, Reporter reporter)
+    + apply(clazz: IClass, reporter: Reporter): boolean
   }
 
-  class RedundantInterfacesCheck  {
-    +boolean apply(ClassNode classNode, Reporter reporter)
+  class RedundantInterfacesCheck {
+    - IClassParser: classParser
 
-    -void collectAllInterfacesFromClass(String internalClassName, Set<String> out, Set<String> visited)
-    -void collectSuperInterfaces(String internalInterfaceName, Set<String> out, Set<String> visited)
-    -ClassNode readClass(String internalName)
+    + RedundantInterfacesCheck(parser: Parser)
+
+    + apply(clazz: IClass, reporter: Reporter): boolean
+
+    - collectAllInterfacesFromClass(className: String, out: Set<String>, visited: Set<String>): void
+    - collectSuperInterfaces(ifaceName: String, out: Set<String>, visited: Set<String>): void
   }
 
-  class GodClassCheck  {
-    -maxMethods : int
-    -maxFields : int
+  class GodClassCheck {
+    - MAX_FIELDS: int <<static>>
+    - MAX_METHODS: int <<static>>
 
-    +boolean apply(ClassNode classNode, Reporter reporter)
+    + apply(clazz: IClass, reporter: Reporter): boolean
   }
 
-   class TooManyNestedIfsCheck {
-      -maxDepth : int
+  class TooManyNestedIfsCheck {
+    - MAX_NESTING: int <<static>>
 
-      +boolean apply(ClassNode classNode, Reporter reporter)
+    + apply(clazz: IClass, reporter: Reporter): boolean
 
-      -int computeMaxIfNesting(MethodNode method)
-   }
+    - computeMaxIfNesting(IMethod method): int
+    - isConditionalJump(IInstruction insn): boolean
+    - findLabelIndex(List<IInstruction> instructions, ILabel targetLabel): int
+  }
 
-    class TooManyParametersCheck {
-      -maxParams : int
+  class TooManyParametersCheck {
+    - MAX_PARAMS: int <<static>>
 
-      +boolean apply(ClassNode classNode, Reporter reporter)
-    }
+    + apply(clazz: IClass, reporter: Reporter): boolean
+  }
 
-    class UnreachableCodeCheck {
-      +boolean apply(ClassNode classNode, Reporter reporter)
+  class UnusedVariablesCheck {
+    + apply(clazz: IClass, reporter: Reporter): boolean
 
-      -boolean isTerminal(AbstractInsnNode insn)
-    }
+    - checkForUnusedVariables(String className, IMethod method, Reporter reporter): void
+    - isLoadInstruction(int opcode): boolean
+    - isMethodParameter(IMethod method, ILocalVariable localVar): boolean
+    - countParameterSlots(String paramDescriptor): int
+  }
 
-    class UnusedVariablesCheck implements Check {
-      +boolean apply(ClassNode classNode, Reporter reporter)
+  class EmptyMethodCheck {
+    + apply(clazz: IClass, reporter: Reporter): boolean
 
-      -boolean checkForUnusedVariables(ClassNode classNode, MethodNode method, Reporter reporter)
-      -boolean isLoadInstruction(int opcode)
-      -boolean isStatic(MethodNode method)
-      -boolean isMethodParameter(MethodNode method, LocalVariableNode localVar)
-      -int countParameterSlots(String paramDescriptor)
-    }
+    - isOnlyReturn(instructions: List<IInstruction>): boolean
+  }
+
+  class CheckFactory {
+    - asmParser: IClassParser <<static>>
+    + createChecks(): List<Check> <<static>>
+  }
 
 }
-LinterApplication ..> ClassFinder
-LinterApplication ..> Linter
-LinterApplication ..> Reporter
-LinterApplication ..> Parser
-LinterApplication ..> CheckFactory
-LinterApplication ..> FileSystemClassFinder
-LinterApplication ..> ConsoleReporter
 
-ClassFinder <|.. FileSystemClassFinder
-Reporter <|.. ConsoleReporter
+class Linter {
+  - parser: Parser
+  - checks: List<Check>
+  + Linter(parser: Parser, initialChecks: List<Check>)
+  - run(className: String, reporter: Reporter): void
+  ~ runMultiple(classNames: List<String>, reporter: Reporter): void
+}
 
-Check <|.. MagicNumberCheck
-Check <|.. NamingConventionCheck
-Check <|.. PublicFieldCheck
-Check <|.. RedundantInterfacesCheck
-Check <|.. GodClassCheck
-Check <|.. TooManyNestedIfsCheck
-Check <|.. TooManyParametersCheck
-Check <|.. UnreachableCodeCheck
-Check <|.. UnusedVariablesCheck
+class main {
+  {static} + main(args: String[]): void
+}
 
-TooManyNestedIfsCheck ..> Reporter
-TooManyParametersCheck ..> Reporter
-UnreachableCodeCheck ..> Reporter
-UnusedVariablesCheck ..> Reporter
-MagicNumberCheck ..> Reporter
-NamingConventionCheck ..> Reporter
-PublicFieldCheck ..> Reporter
-RedundantInterfacesCheck ..> Reporter
-GodClassCheck ..> Reporter
+Linter *-- Parser
+Linter o-- "0..*" Check
+
+Parser --> IClassParser
+
+CheckFactory ..> Check
+CheckFactory ..> IClassParser
+CheckFactory ..> ASMParser
+
+main ..> ASMParser
+main ..> Parser
+main ..> CheckFactory
+main ..> Check
+main ..> Linter
+main ..> ClassFinder
+main ..> FileSystemClassFinder
+main ..> Reporter
+main ..> ConsoleReporter
+
+Linter ..> Reporter
+
+Linter ..> Check
+Linter ..> IClass
+
+FileSystemClassFinder ..> "classesRoot: Path"
+
+ IClassParser <|.. ASMParser
+  IClass <|.. ASMClass
+  IMethod <|.. ASMMethod
+  IField <|.. ASMField
+  IInstruction <|.. ASMInstruction
+  ILabel <|.. ASMLabel
+  ILocalVariable <|.. ASMLocalVariable
+
+  ASMClass "1" o-- "*" ASMMethod
+  ASMClass "1" o-- "*" ASMField
+
+  ClassFinder <|.. FileSystemClassFinder
+  Reporter <|.. ConsoleReporter
+
+
+  Check <|.. MagicNumberCheck
+  Check <|.. NamingConventionCheck
+  Check <|.. PublicFieldCheck
+  Check <|.. RedundantInterfacesCheck
+  Check <|.. GodClassCheck
+  Check <|.. TooManyNestedIfsCheck
+  Check <|.. TooManyParametersCheck
+  Check <|.. UnreachableCodeCheck
+  Check <|.. UnusedVariablesCheck
+  Check <|.. EmptyMethodCheck
+
+  Check ..> Reporter
+  Check ..> IClass
+  MagicNumberCheck ..> IMethod
+  MagicNumberCheck ..> IInstruction
+  TooManyParametersCheck ..> IMethod
+  UnusedVariablesCheck ..> IMethod
+  UnusedVariablesCheck ..> ILocalVariable
+  UnreachableCodeCheck ..> IInstruction
+  EmptyMethodCheck ..> IMethod
 
 @enduml

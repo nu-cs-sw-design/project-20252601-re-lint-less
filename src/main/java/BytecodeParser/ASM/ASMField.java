@@ -21,11 +21,6 @@ final class ASMField implements IField {
     }
 
     @Override
-    public String getType() {
-        return node.desc;
-    }
-
-    @Override
     public boolean isStatic() {
         return (node.access & Opcodes.ACC_STATIC) != 0;
     }
