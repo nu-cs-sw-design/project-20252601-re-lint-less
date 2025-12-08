@@ -1,15 +1,16 @@
-import ASMParser.Parser;
+import BytecodeParser.Parser;
 import Checks.Check;
 import Reporting.Reporter;
-import org.objectweb.asm.tree.ClassNode;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class Linter {
+import BytecodeParser.*;
+import BytecodeParser.ASM.ASMParser;
 
-    private final Parser parser;
+public class Linter {
+
+    IClassParser asmParser = new ASMParser();
+    Parser parser = new Parser(asmParser);
     private final List<Check> checks = new ArrayList<>();
 
     public Linter(Parser parser, List<Check> initialChecks) {
@@ -23,11 +24,8 @@ public final class Linter {
         }
     }
 
-    /**
-     * Lint a single class by name.
-     */
-    private void run(String className, Reporter reporter) {
-        ClassNode node;
+    public void run(String className, Reporter reporter) {
+        IClass node;
 
         try {
             node = parser.parse(className);

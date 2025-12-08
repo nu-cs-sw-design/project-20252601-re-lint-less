@@ -1,9 +1,9 @@
 package Checks;
 
+import BytecodeParser.IClass;
+import BytecodeParser.IField;
 import Reporting.Reporter;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
 
 import java.util.List;
 
@@ -13,31 +13,42 @@ import java.util.List;
 public class PublicFieldCheck implements Check {
 
     @Override
-    public boolean apply(ClassNode classNode, Reporter reporter) {
+    public boolean apply(IClass clazz, Reporter reporter) {
         try {
-            List<FieldNode> fields = (List<FieldNode>) classNode.fields;
+            List<IField> fields = clazz.getFields();
             if (fields == null || fields.isEmpty()) {
                 return true;
             }
 
-            for (FieldNode field : fields) {
-                boolean isPublic = (field.access & Opcodes.ACC_PUBLIC) != 0;
-
-                if (isPublic) {
-                    reporter.report(
-                            classNode.name,
-                            "Field '" + field.name + "' is public; consider using private/protected with accessors."
-                    );
+            for (IField field : fields) {
+                // IField may need a method to get access flags if available in your wrapper
+                // Assuming getAccess() exists, otherwise you could extend IField with it
+                if (field instanceof AccessAwareField) {
+                    int access = ((AccessAwareField) field).getAccess();
+                    boolean isPublic = (access & Opcodes.ACC_PUBLIC) != 0;
+                    if (isPublic) {
+                        reporter.report(
+                                clazz.getClassName(),
+                                "Field '" + field.getName() + "' is public; consider using private/protected with accessors."
+                        );
+                    }
                 }
             }
 
             return true;
         } catch (Exception e) {
             reporter.report(
-                    classNode.name,
+                    clazz.getClassName(),
                     "PublicFieldCheck failed: " + e.getMessage()
             );
             return false;
         }
+    }
+
+    /**
+     * Interface to allow access flag retrieval from fields if your wrapper doesn't already provide it.
+     */
+    public interface AccessAwareField extends IField {
+        int getAccess();
     }
 }
