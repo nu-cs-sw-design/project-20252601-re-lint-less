@@ -14,8 +14,8 @@ import java.util.List;
  */
 public class GodClassCheck implements Check {
 
-    private final int maxMethods = 20;
-    private final int maxFields = 10;
+    private final static int maxMethods = 20;
+    private final static int maxFields = 10;
 
     @Override
     public boolean apply(IClass classNode, Reporter reporter) {

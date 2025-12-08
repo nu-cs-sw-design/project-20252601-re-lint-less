@@ -12,7 +12,7 @@ import java.util.List;
 public class TooManyParametersCheck implements Check {
 
     // Default maximum allowed parameters
-    private final int maxParams = 5;
+    private final static int maxParams = 5;
 
     @Override
     public boolean apply(IClass clazz, Reporter reporter) {

@@ -42,7 +42,7 @@ public final class main {
         } catch (IOException e) {
             System.err.println("Error discovering classes: " + e.getMessage());
             System.exit(1);
-            return; // just to satisfy the compiler
+            return;
         }
 
         if (classNames.isEmpty()) {

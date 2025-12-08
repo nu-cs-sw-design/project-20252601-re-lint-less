@@ -55,12 +55,12 @@ package BytecodeParser {
 
 package "BytecodeParser.ASM" {
 
-  class ASMParser {
+  class  ASMParser {
     + parse(className: String): IClass
   }
 
   class ASMClass {
-    - node: ClassNode
+    -{final} node: ClassNode
     + ASMClass(node: ClassNode)
     + getClassName(): String
     + getMethods(): List<IMethod>
@@ -70,7 +70,7 @@ package "BytecodeParser.ASM" {
   }
 
   class ASMMethod {
-    - node: MethodNode
+    -{final} node: MethodNode
     + ASMMethod(node: MethodNode)
     + getName(): String
     + getParameterCount(): int
@@ -82,7 +82,7 @@ package "BytecodeParser.ASM" {
   }
 
   class ASMField  {
-    - node: FieldNode
+    -{final} node: FieldNode
     + ASMField(node: FieldNode)
     + getName(): String
     + getType(): String
@@ -91,7 +91,7 @@ package "BytecodeParser.ASM" {
   }
 
   class ASMInstruction {
-    - insn: AbstractInsnNode
+    -{final} insn: AbstractInsnNode
     + ASMInstruction(insn: AbstractInsnNode)
     + getOpcode(): int
     + getJumpLabel(): ILabel
@@ -101,12 +101,14 @@ package "BytecodeParser.ASM" {
   }
 
   class ASMLabel {
+    +{final} node: LabelNode
+
     + equals(Object o): Boolean
     + hashCode(): int
   }
 
   class ASMLocalVariable  {
-    - node: LocalVariableNode
+    -{final} node: LocalVariableNode
     + ASMLocalVariable(node: LocalVariableNode)
     + getName(): String
     + getIndex(): int
@@ -114,14 +116,14 @@ package "BytecodeParser.ASM" {
 
 }
 
-package ClassFinder {
+package "ClassFinder " {
 
   interface ClassFinder {
     + discoverClasses(inputs: String[]): List<String>
   }
 
   class FileSystemClassFinder  {
-    - classesRoot: Path
+    -{final} classesRoot: Path
     + FileSystemClassFinder(classesRoot: Path)
     + discoverClasses(inputs: String[]): List<String>
     - findClassFilesInDirectory(dir: Path): List<String>
@@ -149,7 +151,7 @@ package Checks {
   }
 
   class MagicNumberCheck {
-    - ALLOWED: Set<Number>
+    -{final}{static} ALLOWED: Set<Number>
 
     + apply(clazz: IClass, reporter: Reporter): boolean
 
@@ -173,7 +175,7 @@ package Checks {
   }
 
   class RedundantInterfacesCheck {
-    - IClassParser: classParser
+    -{final} IClassParser: classParser
 
     + RedundantInterfacesCheck(parser: Parser)
 
@@ -184,14 +186,14 @@ package Checks {
   }
 
   class GodClassCheck {
-    - MAX_FIELDS: int <<static>>
-    - MAX_METHODS: int <<static>>
+    -{final}{static} MAX_FIELDS: int
+    -{final}{static} MAX_METHODS: int
 
     + apply(clazz: IClass, reporter: Reporter): boolean
   }
 
   class TooManyNestedIfsCheck {
-    - MAX_NESTING: int <<static>>
+    -{final}{static} MAX_NESTING: int
 
     + apply(clazz: IClass, reporter: Reporter): boolean
 
@@ -201,7 +203,7 @@ package Checks {
   }
 
   class TooManyParametersCheck {
-    - MAX_PARAMS: int <<static>>
+    -{final}{static} MAX_PARAMS: int
 
     + apply(clazz: IClass, reporter: Reporter): boolean
   }
@@ -222,84 +224,88 @@ package Checks {
   }
 
   class CheckFactory {
-    - asmParser: IClassParser <<static>>
-    + createChecks(): List<Check> <<static>>
+    -{final}{static} asmParser: IClassParser
+    +{static} createChecks(): List<Check>
   }
 
 }
 
 class Linter {
-  - parser: Parser
-  - checks: List<Check>
+  -{final} parser: Parser
+  -{final} checks: List<Check>
+
   + Linter(parser: Parser, initialChecks: List<Check>)
+
   - run(className: String, reporter: Reporter): void
   ~ runMultiple(classNames: List<String>, reporter: Reporter): void
 }
 
 class main {
-  {static} + main(args: String[]): void
+  -{final}{static} CLASSES_ROOT
+
+  +{static} main(args: String[]): void
 }
 
-Linter *-- Parser
-Linter o-- "0..*" Check
+IClassParser     <|.. ASMParser
+IClass           <|.. ASMClass
+IMethod          <|.. ASMMethod
+IField           <|.. ASMField
+IInstruction     <|.. ASMInstruction
+ILabel           <|.. ASMLabel
+ILocalVariable   <|.. ASMLocalVariable
+
+ClassFinder      <|.. FileSystemClassFinder
+Reporter         <|.. ConsoleReporter
+Check            <|.. MagicNumberCheck
+Check            <|.. NamingConventionCheck
+Check            <|.. PublicFieldCheck
+Check            <|.. RedundantInterfacesCheck
+Check            <|.. GodClassCheck
+Check            <|.. TooManyNestedIfsCheck
+Check            <|.. TooManyParametersCheck
+Check            <|.. UnusedVariablesCheck
+Check            <|.. EmptyMethodCheck
 
 Parser --> IClassParser
+Parser --> IClass
+Linter --> Parser
+Linter --> Check
+Linter --> Reporter
+Linter --> IClass
 
-CheckFactory ..> Check
-CheckFactory ..> IClassParser
-CheckFactory ..> ASMParser
+MagicNumberCheck --> IMethod
+MagicNumberCheck --> IInstruction
 
-main ..> ASMParser
-main ..> Parser
-main ..> CheckFactory
-main ..> Check
-main ..> Linter
-main ..> ClassFinder
-main ..> FileSystemClassFinder
-main ..> Reporter
-main ..> ConsoleReporter
+NamingConventionCheck --> IMethod
+NamingConventionCheck --> IField
 
-Linter ..> Reporter
+PublicFieldCheck --> IField
 
-Linter ..> Check
-Linter ..> IClass
+RedundantInterfacesCheck --> IClassParser
 
-FileSystemClassFinder ..> "classesRoot: Path"
+GodClassCheck --> IMethod
+GodClassCheck --> IField
 
- IClassParser <|.. ASMParser
-  IClass <|.. ASMClass
-  IMethod <|.. ASMMethod
-  IField <|.. ASMField
-  IInstruction <|.. ASMInstruction
-  ILabel <|.. ASMLabel
-  ILocalVariable <|.. ASMLocalVariable
+TooManyNestedIfsCheck --> IMethod
+TooManyNestedIfsCheck --> IInstruction
+TooManyNestedIfsCheck --> ILabel
 
-  ASMClass "1" o-- "*" ASMMethod
-  ASMClass "1" o-- "*" ASMField
+TooManyParametersCheck --> IMethod
 
-  ClassFinder <|.. FileSystemClassFinder
-  Reporter <|.. ConsoleReporter
+UnusedVariablesCheck --> IMethod
+UnusedVariablesCheck --> ILocalVariable
+UnusedVariablesCheck --> IInstruction
 
+EmptyMethodCheck --> IMethod
+EmptyMethodCheck --> IInstruction
 
-  Check <|.. MagicNumberCheck
-  Check <|.. NamingConventionCheck
-  Check <|.. PublicFieldCheck
-  Check <|.. RedundantInterfacesCheck
-  Check <|.. GodClassCheck
-  Check <|.. TooManyNestedIfsCheck
-  Check <|.. TooManyParametersCheck
-  Check <|.. UnreachableCodeCheck
-  Check <|.. UnusedVariablesCheck
-  Check <|.. EmptyMethodCheck
+CheckFactory --> Check
+CheckFactory --> IClassParser
 
-  Check ..> Reporter
-  Check ..> IClass
-  MagicNumberCheck ..> IMethod
-  MagicNumberCheck ..> IInstruction
-  TooManyParametersCheck ..> IMethod
-  UnusedVariablesCheck ..> IMethod
-  UnusedVariablesCheck ..> ILocalVariable
-  UnreachableCodeCheck ..> IInstruction
-  EmptyMethodCheck ..> IMethod
+main --> Linter
+main --> Parser
+main --> CheckFactory
+main --> ClassFinder
+main --> Reporter
 
 @enduml

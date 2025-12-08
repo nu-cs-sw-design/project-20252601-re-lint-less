@@ -24,7 +24,7 @@ public class Linter {
         }
     }
 
-    public void run(String className, Reporter reporter) {
+    private void run(String className, Reporter reporter) {
         IClass node;
 
         try {
