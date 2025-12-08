@@ -2,8 +2,9 @@ package Checks;
 
 import BytecodeParser.IClass;
 import BytecodeParser.IField;
+import BytecodeParser.IOpcodes;
+
 import Reporting.Reporter;
-import org.objectweb.asm.Opcodes;
 
 import java.util.List;
 
@@ -23,7 +24,7 @@ public class PublicFieldCheck implements Check {
             for (IField field : fields) {
                 if (field instanceof AccessAwareField) {
                     int access = ((AccessAwareField) field).getAccess();
-                    boolean isPublic = (access & Opcodes.ACC_PUBLIC) != 0;
+                    boolean isPublic = (access & IOpcodes.ACC_PUBLIC) != 0;
                     if (isPublic) {
                         reporter.report(
                                 clazz.getClassName(),
