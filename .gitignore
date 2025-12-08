@@ -255,3 +255,6 @@ gradle-app.setting
 # Cache of project
 .gradletasknamecache
 /.idea/
+
+# Test outputs
+test-output/
