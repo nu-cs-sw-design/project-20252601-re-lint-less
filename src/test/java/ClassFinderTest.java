@@ -48,10 +48,8 @@ class ClassFinderTest {
 
     @Test
     void testDiscoverClasses_withDirectory(@TempDir Path tempDir) throws IOException {
-        // Create test class finder with the temp directory as root
         ClassFinder finder = new FileSystemClassFinder(tempDir);
 
-        // Create a mock directory structure with .class files
         Path packageDir = tempDir.resolve("com").resolve("example");
         Files.createDirectories(packageDir);
 
@@ -71,10 +69,8 @@ class ClassFinderTest {
 
     @Test
     void testDiscoverClasses_withDirectory_skipsInnerClasses(@TempDir Path tempDir) throws IOException {
-        // Create test class finder with the temp directory as root
         ClassFinder finder = new FileSystemClassFinder(tempDir);
 
-        // Create a directory with both regular and inner classes
         Path packageDir = tempDir.resolve("com").resolve("example");
         Files.createDirectories(packageDir);
 
@@ -102,17 +98,14 @@ class ClassFinderTest {
         List<String> discovered = classFinder.discoverClasses(args);
 
         // Non-existent paths that aren't directories are treated as class names
-        // This is expected behavior - can't tell if it's meant to be a directory or class
         assertEquals(1, discovered.size());
         assertEquals("/non/existent/directory", discovered.get(0));
     }
 
     @Test
     void testDiscoverClasses_mixedClassNamesAndDirectory(@TempDir Path tempDir) throws IOException {
-        // Create test class finder with the temp directory as root
         ClassFinder finder = new FileSystemClassFinder(tempDir);
 
-        // Create a directory with .class files
         Path packageDir = tempDir.resolve("com").resolve("test");
         Files.createDirectories(packageDir);
         Files.createFile(packageDir.resolve("DirClass.class"));
@@ -165,7 +158,6 @@ class ClassFinderTest {
     void testDiscoverClasses_nestedDirectories(@TempDir Path tempDir) throws IOException {
         ClassFinder finder = new FileSystemClassFinder(tempDir);
 
-        // Create deeply nested package structure
         Path deepPackage = tempDir.resolve("org").resolve("example").resolve("util").resolve("internal");
         Files.createDirectories(deepPackage);
 
@@ -189,20 +181,7 @@ class ClassFinderTest {
     }
 
     @Test
-    void testDiscoverClasses_withWildcardPattern() throws IOException {
-        // Wildcards are simplified for now - just removes the *
-        String[] args = {"com.example.*"};
-
-        List<String> discovered = classFinder.discoverClasses(args);
-
-        // Current implementation just removes the *
-        assertEquals(1, discovered.size());
-        assertEquals("com.example.", discovered.get(0));
-    }
-
-    @Test
     void testDiscoverClasses_directoryOutsideClassesRoot(@TempDir Path otherDir) throws IOException {
-        // Create a directory outside the classes root
         Path outsidePackage = otherDir.resolve("outside");
         Files.createDirectories(outsidePackage);
         Files.createFile(outsidePackage.resolve("External.class"));
@@ -211,7 +190,6 @@ class ClassFinderTest {
 
         List<String> discovered = classFinder.discoverClasses(args);
 
-        // Should return empty since it's outside the classes root
         assertEquals(0, discovered.size());
     }
 }

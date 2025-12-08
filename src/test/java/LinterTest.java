@@ -1,9 +1,11 @@
-import ASMParser.Parser;
+import BytecodeParser.ASM.ASMParser;
+import BytecodeParser.IClass;
+import BytecodeParser.IClassParser;
+import BytecodeParser.Parser;
 import Checks.Check;
 import Reporting.Reporter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.objectweb.asm.tree.ClassNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +19,8 @@ class LinterTest {
 
     @BeforeEach
     void setUp() {
-        parser = new Parser();
+        IClassParser asmParser = new ASMParser();
+        parser = new Parser(asmParser);
         mockReporter = new MockReporter();
     }
 
@@ -38,11 +41,14 @@ class LinterTest {
         // Verify both classes were processed
         assertEquals(2, mockReporter.getReports().size(),
                 "Expected exactly 2 reports (one per class)");
-        // ClassNode.name uses internal format (slashes), not dots
-        assertTrue(mockReporter.getReports().get(0).contains("examples/PublicFieldExample") ||
-                   mockReporter.getReports().get(0).contains("examples.PublicFieldExample"));
-        assertTrue(mockReporter.getReports().get(1).contains("examples/MagicNumbersExample") ||
-                   mockReporter.getReports().get(1).contains("examples.MagicNumbersExample"));
+
+        String r1 = mockReporter.getReports().get(0);
+        String r2 = mockReporter.getReports().get(1);
+
+        assertTrue(r1.contains("examples/PublicFieldExample") || r2.contains("examples/PublicFieldExample"),
+                "Expected a report for examples/PublicFieldExample");
+        assertTrue(r1.contains("examples/MagicNumbersExample") || r2.contains("examples/MagicNumbersExample"),
+                "Expected a report for examples/MagicNumbersExample");
     }
 
     @Test
@@ -67,9 +73,11 @@ class LinterTest {
 
         linter.runMultiple(classNames, mockReporter);
 
-        // Should report parse failure
+        // Linter should report parse failure for the invalid class
         assertEquals(1, mockReporter.getReports().size());
-        assertTrue(mockReporter.getReports().get(0).contains("Failed to parse"));
+        String msg = mockReporter.getReports().get(0);
+        assertTrue(msg.contains("NonExistentClass"), "Report should mention the invalid class name");
+        assertTrue(msg.contains("Failed to parse"), "Report should indicate parse failure");
     }
 
     @Test
@@ -99,7 +107,7 @@ class LinterTest {
     }
 
     @Test
-    void testLinter_checkReceivesCorrectClassNode() {
+    void testLinter_checkReceivesCorrectClass() {
         List<String> classNames = List.of("examples.PublicFieldExample");
 
         CapturingCheck capturingCheck = new CapturingCheck();
@@ -107,9 +115,10 @@ class LinterTest {
 
         linter.runMultiple(classNames, mockReporter);
 
-        // Verify the check received the correct ClassNode
+        // Verify the check received the correct class
         assertEquals(1, capturingCheck.classesChecked.size());
-        assertEquals("examples/PublicFieldExample", capturingCheck.classesChecked.get(0).name);
+        assertEquals("examples/PublicFieldExample",
+                capturingCheck.classesChecked.get(0).getClassName());
     }
 
     @Test
@@ -137,8 +146,9 @@ class LinterTest {
 
         // Should catch exception and report it
         assertEquals(1, mockReporter.getReports().size());
-        assertTrue(mockReporter.getReports().get(0).contains("Check crashed"));
-        assertTrue(mockReporter.getReports().get(0).contains("ThrowingCheck"));
+        String msg = mockReporter.getReports().get(0);
+        assertTrue(msg.contains("Check crashed"));
+        assertTrue(msg.contains("ThrowingCheck"));
     }
 
     @Test
@@ -167,34 +177,32 @@ class LinterTest {
 
     private static class MockCheck implements Check {
         @Override
-        public boolean apply(ClassNode classNode, Reporter reporter) {
-            // Always succeeds
+        public boolean apply(IClass clazz, Reporter reporter) {
             return true;
         }
     }
 
     private static class ReportingCheck implements Check {
         @Override
-        public boolean apply(ClassNode classNode, Reporter reporter) {
-            // Always reports something
-            reporter.report(classNode.name, "Check executed");
+        public boolean apply(IClass clazz, Reporter reporter) {
+            reporter.report(clazz.getClassName(), "Check executed");
             return true;
         }
     }
 
     private static class CapturingCheck implements Check {
-        public final List<ClassNode> classesChecked = new ArrayList<>();
+        public final List<IClass> classesChecked = new ArrayList<>();
 
         @Override
-        public boolean apply(ClassNode classNode, Reporter reporter) {
-            classesChecked.add(classNode);
+        public boolean apply(IClass clazz, Reporter reporter) {
+            classesChecked.add(clazz);
             return true;
         }
     }
 
     private static class ThrowingCheck implements Check {
         @Override
-        public boolean apply(ClassNode classNode, Reporter reporter) {
+        public boolean apply(IClass clazz, Reporter reporter) {
             throw new RuntimeException("Test exception");
         }
     }
