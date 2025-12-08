@@ -91,9 +91,12 @@ public class TooManyNestedIfsCheck implements Check {
     private int findLabelIndex(List<IInstruction> instructions, ILabel targetLabel) {
         for (int i = 0; i < instructions.size(); i++) {
             IInstruction insn = instructions.get(i);
-            ILabel jumpLabel = insn.getJumpLabel();
-            if (jumpLabel != null && jumpLabel.equals(targetLabel)) {
-                return i;
+            // Check if this instruction IS the label (not a jump TO the label)
+            if (insn.getOpcode() == -1) { // LabelNode has opcode -1
+                ILabel label = insn.getJumpLabel();
+                if (label != null && label.equals(targetLabel)) {
+                    return i;
+                }
             }
         }
         return -1;

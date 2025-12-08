@@ -21,15 +21,11 @@ public class PublicFieldCheck implements Check {
             }
 
             for (IField field : fields) {
-                if (field instanceof AccessAwareField) {
-                    int access = ((AccessAwareField) field).getAccess();
-                    boolean isPublic = (access & Opcodes.ACC_PUBLIC) != 0;
-                    if (isPublic) {
-                        reporter.report(
-                                clazz.getClassName(),
-                                "Field '" + field.getName() + "' is public; consider using private/protected with accessors."
-                        );
-                    }
+                if (field.isPublic()) {
+                    reporter.report(
+                            clazz.getClassName(),
+                            "Field '" + field.getName() + "' is public; consider using private/protected with accessors."
+                    );
                 }
             }
 
@@ -41,12 +37,5 @@ public class PublicFieldCheck implements Check {
             );
             return false;
         }
-    }
-
-    /**
-     * Interface to allow access flag retrieval from fields.
-     */
-    public interface AccessAwareField extends IField {
-        int getAccess();
     }
 }
