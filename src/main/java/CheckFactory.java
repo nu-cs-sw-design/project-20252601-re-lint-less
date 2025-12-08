@@ -20,7 +20,7 @@ public class CheckFactory {
                 new MagicNumberCheck(),
                 new TooManyParametersCheck(),
                 new UnreachableCodeCheck(),
-                //new UnusedVariablesCheck(),
+                new UnusedVariablesCheck(),
                 new GodClassCheck(),
                 new NamingConventionCheck()
         );

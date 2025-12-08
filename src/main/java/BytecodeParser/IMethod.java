@@ -9,4 +9,6 @@ public interface IMethod {
 	List<Integer> getOpcodes();
 	List<IInstruction> getInstructions();
 	List<ILocalVariable> getLocalVariables();
+    String getDescriptor();
+    boolean isStatic();
 }
