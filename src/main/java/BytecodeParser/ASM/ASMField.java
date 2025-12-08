@@ -34,4 +34,9 @@ final class ASMField implements IField {
     public boolean isFinal() {
         return (node.access & Opcodes.ACC_FINAL) != 0;
     }
+
+    @Override
+    public boolean isPublic() {
+        return (node.access & Opcodes.ACC_PUBLIC) != 0;
+    }
 }

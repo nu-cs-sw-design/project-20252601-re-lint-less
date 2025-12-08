@@ -8,13 +8,22 @@ import org.objectweb.asm.tree.LabelNode;
  */
 final class ASMLabel implements ILabel {
 
+    private final LabelNode node;
+
+    ASMLabel(LabelNode node) {
+        this.node = node;
+    }
+
     @Override
     public boolean equals(Object o) {
-        return this == o; // identity-based
+        if (this == o) return true;
+        if (!(o instanceof ASMLabel)) return false;
+        ASMLabel other = (ASMLabel) o;
+        return this.node == other.node;
     }
 
     @Override
     public int hashCode() {
-        return System.identityHashCode(this);
+        return System.identityHashCode(node);
     }
 }

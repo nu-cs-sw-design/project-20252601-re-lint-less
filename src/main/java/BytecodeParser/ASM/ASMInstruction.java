@@ -21,7 +21,11 @@ final class ASMInstruction implements IInstruction {
     @Override
     public ILabel getJumpLabel() {
         if (insn instanceof JumpInsnNode) {
-            return new ASMLabel();
+            LabelNode target = ((JumpInsnNode) insn).label;
+            return target != null ? new ASMLabel(target) : null;
+        }
+        if (insn instanceof LabelNode) {
+            return new ASMLabel((LabelNode) insn);
         }
         return null;
     }

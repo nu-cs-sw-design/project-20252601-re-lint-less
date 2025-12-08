@@ -5,4 +5,5 @@ public interface IField {
     String getType();
     boolean isStatic();
     boolean isFinal();
+    boolean isPublic();
 }
